@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RAG Chatbot</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  section { margin-bottom: 24px; }
+  input[type="file"], textarea { width: 100%; box-sizing: border-box; }
+  textarea { height: 80px; margin-top: 8px; }
+  button { margin-top: 8px; padding: 8px 16px; cursor: pointer; }
+  #answer, #uploadStatus { white-space: pre-wrap; margin-top: 12px; padding: 12px; background: #f4f4f4; border-radius: 6px; }
+  .sources { font-size: 0.85rem; color: #555; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>RAG Chatbot</h1>
+
+  <section>
+    <h2>1. Upload a document</h2>
+    <input type="file" id="fileInput" accept=".pdf,.txt,.md" />
+    <button onclick="uploadFile()">Upload</button>
+    <div id="uploadStatus"></div>
+  </section>
+
+  <section>
+    <h2>2. Ask a question</h2>
+    <textarea id="questionInput" placeholder="Ask something about the uploaded document(s)..."></textarea>
+    <button onclick="askQuestion()">Ask</button>
+    <div id="answer"></div>
+  </section>
+
+<script>
+async function uploadFile() {
+  const input = document.getElementById('fileInput');
+  const status = document.getElementById('uploadStatus');
+  if (!input.files.length) { status.textContent = 'Choose a file first.'; return; }
+
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  status.textContent = 'Uploading...';
+
+  const res = await fetch('/upload', { method: 'POST', body: formData });
+  const data = await res.json();
+  status.textContent = res.ok
+    ? `Ingested "${data.filename}" (${data.chunks_added} chunks).`
+    : `Error: ${data.detail}`;
+}
+
+async function askQuestion() {
+  const question = document.getElementById('questionInput').value;
+  const answerBox = document.getElementById('answer');
+  if (!question.trim()) return;
+
+  answerBox.textContent = 'Thinking...';
+  const res = await fetch('/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question })
+  });
+  const data = await res.json();
+
+  if (!res.ok) { answerBox.textContent = `Error: ${data.detail}`; return; }
+
+  const sources = data.sources.length ? `\n\nSources: ${data.sources.join(', ')}` : '';
+  answerBox.textContent = data.answer + sources;
+}
+</script>
+</body>
+</html>
