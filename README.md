@@ -28,6 +28,24 @@ uvicorn app.main:app --reload
 
 Open http://localhost:8000, upload a document, then ask a question about it.
 
+## Deploy with Docker
+
+```bash
+cp .env.example .env
+# edit .env and set ANTHROPIC_API_KEY
+
+docker compose up -d --build
+```
+
+The app is served on `http://<server-ip>:8000`. The vector store persists in a named Docker volume (`chroma_data`) across restarts/redeploys.
+
+To update after a code change:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
 ## API
 
 - `POST /upload` — multipart file upload (`.pdf`, `.txt`, `.md`), ingests the document into the vector store.
