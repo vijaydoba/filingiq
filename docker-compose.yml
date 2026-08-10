@@ -5,6 +5,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      ANONYMIZED_TELEMETRY: "FALSE"
     volumes:
       - chroma_data:/app/chroma_db
     restart: unless-stopped

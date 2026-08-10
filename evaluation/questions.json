@@ -1,0 +1,12 @@
+[
+  {
+    "company": "Tesla, Inc.",
+    "question": "What was the latest reported revenue?",
+    "expected_source_contains": "10-K"
+  },
+  {
+    "company": "Tesla, Inc.",
+    "question": "What risks does the filing identify?",
+    "expected_source_contains": "10-K"
+  }
+]
