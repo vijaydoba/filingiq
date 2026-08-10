@@ -2,11 +2,13 @@ import os
 import shutil
 import tempfile
 import json
+import time
 import urllib.parse
 import urllib.request
+from collections import defaultdict, deque
 
 import anthropic
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -18,6 +20,23 @@ from app.rag import answer_question, stream_answer_question, summarize_company
 app = FastAPI(title="RAG Chatbot")
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
+
+# Claude API calls cost real money per request, so the LLM-backed endpoints get a
+# per-IP rate limit. This is a public demo deployment with no auth in front of it.
+RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMIT_MAX_REQUESTS = 10
+_request_log: dict[str, deque[float]] = defaultdict(deque)
+
+
+def enforce_rate_limit(request: Request) -> None:
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    log = _request_log[client_ip]
+    while log and now - log[0] > RATE_LIMIT_WINDOW_SECONDS:
+        log.popleft()
+    if len(log) >= RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(429, "Too many requests. Please wait a minute and try again.")
+    log.append(now)
 
 
 class Question(BaseModel):
@@ -228,7 +247,7 @@ async def auto_ingest(payload: AutoIngestRequest):
     }
 
 
-@app.get("/summary")
+@app.get("/summary", dependencies=[Depends(enforce_rate_limit)])
 async def summary(company: str):
     if not company.strip():
         raise HTTPException(400, "Company must not be empty.")
@@ -240,7 +259,7 @@ async def summary(company: str):
         raise HTTPException(502, f"Claude API error: {e.message}") from e
 
 
-@app.post("/ask")
+@app.post("/ask", dependencies=[Depends(enforce_rate_limit)])
 async def ask(payload: Question):
     if not payload.question.strip():
         raise HTTPException(400, "Question must not be empty.")
@@ -250,7 +269,7 @@ async def ask(payload: Question):
         raise HTTPException(502, f"Claude API error: {e.message}") from e
 
 
-@app.post("/compare")
+@app.post("/compare", dependencies=[Depends(enforce_rate_limit)])
 async def compare(payload: CompareRequest):
     """Answer one research question for two indexed companies.
 
@@ -272,7 +291,7 @@ async def compare(payload: CompareRequest):
         raise HTTPException(502, f"Claude API error: {e.message}") from e
 
 
-@app.post("/ask/stream")
+@app.post("/ask/stream", dependencies=[Depends(enforce_rate_limit)])
 async def ask_stream(payload: Question):
     if not payload.question.strip():
         raise HTTPException(400, "Question must not be empty.")
