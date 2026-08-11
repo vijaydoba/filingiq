@@ -43,7 +43,7 @@
   <div id="toast" class="toast"></div>
   <script>
     let companies=[];let selected="";let searchTimer=null;let compareSelected=[];
-    const CURATED=[['Tata Consultancy Services','TCS'],['Infosys','INFY'],['Reliance Industries','RELIANCE'],['Tata Motors','TATAMOTORS'],['Tesla','TSLA'],['Apple','AAPL'],['SAP SE','SAP'],['Siemens AG','SIE'],['Volkswagen AG','VOW3'],['Deutsche Bank AG','DBK'],['Allianz SE','ALV']];
+    const CURATED=[['Tata Consultancy Services','TCS'],['Infosys','INFY'],['Reliance Industries','RELIANCE'],['Tata Motors','TATAMOTORS'],['Tesla','TSLA'],['Apple','AAPL'],['SAP SE','SAP'],['Siemens AG','SIE'],['Volkswagen AG','VOW3'],['Deutsche Bank','DBK'],['Allianz SE','ALV']];
     const $=id=>document.getElementById(id);
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     function toast(message,type='success'){const t=$('toast');t.textContent=message;t.className=`toast show ${type}`;setTimeout(()=>t.className='toast',4200)}
